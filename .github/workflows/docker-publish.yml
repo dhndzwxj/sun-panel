@@ -1,0 +1,55 @@
+
+name: Build and Push Sun-Panel
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 获取 GitHub 项目代码
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # 2. 配置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # 3. 登录 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 4. 自动生成镜像标签
+      - name: Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: dhndzwxj/sun-panel
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha
+
+      # 5. 构建并推送 Docker 镜像
+      - name: Build and Push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
