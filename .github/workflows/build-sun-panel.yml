@@ -1,0 +1,36 @@
+
+name: Build Sun-Panel for Synology
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Linux AMD64 Docker Image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --tag sun-panel-liang:latest \
+            .
+
+      - name: Export Docker image
+        run: |
+          docker save \
+            --output /tmp/sun-panel.tar \
+            sun-panel-liang:latest
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: sun-panel-linux-amd64
+          path: /tmp/sun-panel.tar
+          retention-days: 7
+          if-no-files-found: error
